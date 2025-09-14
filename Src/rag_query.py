@@ -30,7 +30,7 @@ def build_retriever(PROMPT):
     callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])
     
     llm = Ollama(model="gemma3:4b" , callbacks=callback_manager)
-    # llm = ChatGoogleGenerativeAI(model = "gemini-2.5-flash" , google_api_key="AIzaSyAHGnib-7_5ZeV8cePFwwnhM5HI5i4RPNY" , streaming = True , callback_manager = callback_manager)
+    # llm = ChatGoogleGenerativeAI(model = "gemini-2.5-flash" , google_api_key="---" , streaming = True , callback_manager = callback_manager)
     docsearch = create_store_embeddings.load_faiss()
 
     retriever = docsearch.as_retriever(search_kwargs ={"k" : 10})
