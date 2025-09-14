@@ -3,17 +3,21 @@ from langchain_community.llms.ollama import Ollama
 from langchain.chains import RetrievalQA
 import create_store_embeddings
 from langchain.prompts import PromptTemplate
-from langchain_community.chat_models import ChatOllama
-from langchain.schema import Document
+from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
+from langchain.callbacks.manager import CallbackManager
+
+
 def get_prompt():
     template = """
-    Use the following documents to answer the question. Always cite the scene number and timespan in your answer. 
-    Document format: 
+    Use the following documents to answer the question . 
     {context}
-
     Question: {question}
-
-    Answer (include scene info):
+    Instructions:
+    - Always include the document name(s)(source)  for any fact mentioned.
+    - Include the source 
+    Answer (include source):
+    
+    
     """
     PROMPT = PromptTemplate(
         template=template , 
@@ -23,11 +27,13 @@ def get_prompt():
 
     
 def build_retriever(PROMPT):
-    llm = ChatOllama(model="gemma3:4b" , streaming=True)
-
+    callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])
+    
+    llm = Ollama(model="gemma3:4b" , callbacks=callback_manager)
+    # llm = ChatGoogleGenerativeAI(model = "gemini-2.5-flash" , google_api_key="AIzaSyAHGnib-7_5ZeV8cePFwwnhM5HI5i4RPNY" , streaming = True , callback_manager = callback_manager)
     docsearch = create_store_embeddings.load_faiss()
 
-    retriever = docsearch.as_retriever(search_kwargs ={"k" : 3})
+    retriever = docsearch.as_retriever(search_kwargs ={"k" : 10})
    
     print(retriever)
     qa = RetrievalQA.from_chain_type(
@@ -68,7 +74,7 @@ def build_tools(qa):
         )
     ]
     return tools
-def run_agent(llm ,tools , query:str):
+def run_agent(llm ,tools , query:str  , st_callbacks):
     agent = initialize_agent(
         tools , 
         llm , 
@@ -79,8 +85,7 @@ def run_agent(llm ,tools , query:str):
     )
 
 
-
-    response = agent.invoke({"input": query} ,  return_intermediate_steps=True)
+    response = agent.invoke({"input": query}, config={"callbacks": [st_callbacks]}, return_intermediate_steps=True)
     final_answer = response["output"]
     _ , retriever_text = response["intermediate_steps"][0]
     sources = retriever_text.split("📖 Sources:")[-1].strip()
@@ -90,7 +95,7 @@ def run_agent(llm ,tools , query:str):
 #     qa, llm = build_retriever(PROMPT)
 #     tools = build_tools(qa)
 #     query = "angry cats"
-#     response = run_agent(llm, tools, query)
+#     response , sources = run_agent(llm, tools, query)
 #     print(response)
 
 

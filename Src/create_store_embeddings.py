@@ -18,7 +18,7 @@ def save_faiss():
 # print(similarity)
     docs = [
         Document(
-            page_content=scene['description'],
+            page_content=f"{scene['description']}\n source : {scene['doc']}",
             metadata={
                 "scene_num": scene['scene_num'],
                 "scene_timespan": scene['scene_timespan'],
@@ -36,3 +36,5 @@ def load_faiss():
     query = "kitten inside a box"
     results = docsearch.similarity_search(query , k=2)
     return docsearch
+if __name__ == "__main__":
+    save_faiss()

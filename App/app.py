@@ -3,7 +3,7 @@ import streamlit as st
 import sys
 import os
 import time
-
+from langchain_community.callbacks.streamlit import (StreamlitCallbackHandler)
 # Setup path for rag_query
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # agentic/
 SRC_DIR = os.path.join(BASE_DIR, "Src")
@@ -48,12 +48,14 @@ if user_input:
             chat["placeholder"] = st.empty()
 
     # Show "Bot is typing..."
-    chat["placeholder"].markdown("<div class='bot'>Thinking...</div>", unsafe_allow_html=True)
+
     pattern = r"Scene\s+\d+\s*\|\s*[\d:–]+\s*\|\s*([\w\d_]+\.txt)\s*→"
     # --- Generate bot response ---
-    response , source = rg.run_agent(llm, tools, user_input)
-    match = re.match(pattern , source)
-    doc_name = match.group(1)
+    st_callback = StreamlitCallbackHandler(st.container())
+
+    response , source = rg.run_agent(llm, tools, user_input , st_callback)
+    chat["placeholder"].markdown("<div class='bot'>Thinking...</div>", unsafe_allow_html=True)
+
             # Replace placeholder with actual bot message
-    chat["bot"] = f"{response}'\n'{doc_name}"
-    chat["placeholder"].markdown(f"<div class='bot'>{response}'\n'{doc_name}</div>", unsafe_allow_html=True)
+    chat["bot"] = f"{response}"
+    chat["placeholder"].markdown(f"<div class='bot'>{response}</div>", unsafe_allow_html=True)
