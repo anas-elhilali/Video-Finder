@@ -23,6 +23,7 @@ st.markdown("""
 PROMPT = rg.get_prompt()
 qa, llm = rg.build_retriever(PROMPT)
 tools = rg.build_tools(qa)
+rag_tool = tools[0].func  
 
 st.title("Agentic RAG")
 
@@ -51,10 +52,9 @@ if user_input:
 
     pattern = r"Scene\s+\d+\s*\|\s*[\d:–]+\s*\|\s*([\w\d_]+\.txt)\s*→"
     # --- Generate bot response ---
-    st_callback = StreamlitCallbackHandler(st.container())
+    st_callback = StreamlitCallbackHandler(parent_container=chat["placeholder"])
 
-    response , source = rg.run_agent(llm, tools, user_input , st_callback)
-    chat["placeholder"].markdown("<div class='bot'>Thinking...</div>", unsafe_allow_html=True)
+    response = rg.run_rag(user_input , rag_tool,st_callback)
 
             # Replace placeholder with actual bot message
     chat["bot"] = f"{response}"

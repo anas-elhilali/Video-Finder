@@ -5,16 +5,27 @@ import create_store_embeddings
 from langchain.prompts import PromptTemplate
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain.callbacks.manager import CallbackManager
-
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain.memory import ConversationBufferMemory
+from langchain.chains import ConversationalRetrievalChain
+from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
+import pprint
 
 def get_prompt():
     template = """
-    Use the following documents to answer the question . 
+    You are an expert in finding scenes that describe a script your job is to help a contetn creator find scenes that support their script(story )
+    you have to follow this instructions : 
+    If the input script has multiple parts:
+    1. Break it into smaller sub-queries.
+    2. Use the 'RAG Retriever' tool for each sub-query separately.
+    3. Collect all the results.
+    4. Synthesize into a final answer, citing sources.
+    5- Always include the document name(s)(source)  for any fact mentioned.
+    6- Include the source 
+    7- Always try to answer using the retrieved documents, even if the match isn’t perfect.
+    8- If exact events are missing, do your best to reconstruct the scene from related events.
     {context}
-    Question: {question}
-    Instructions:
-    - Always include the document name(s)(source)  for any fact mentioned.
-    - Include the source 
+    question: look for scenes in this script , each part of this script give the source  "{question}"   
     Answer (include source):
     
     
@@ -25,7 +36,8 @@ def get_prompt():
     )
     return PROMPT
 
-    
+
+  
 def build_retriever(PROMPT):
     callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])
     
@@ -33,38 +45,48 @@ def build_retriever(PROMPT):
     # llm = ChatGoogleGenerativeAI(model = "gemini-2.5-flash" , google_api_key="---" , streaming = True , callback_manager = callback_manager)
     docsearch = create_store_embeddings.load_faiss()
 
-    retriever = docsearch.as_retriever(search_kwargs ={"k" : 10})
-   
+    retriever = docsearch.as_retriever(search_kwargs ={"k" : 50})
     print(retriever)
     qa = RetrievalQA.from_chain_type(
         llm = llm ,
         retriever = retriever , 
         chain_type = "stuff",
-        chain_type_kwargs = {"prompt" : PROMPT},
+        chain_type_kwargs={"prompt": PROMPT},
         return_source_documents=True
+
     )
     return qa , llm
 
 
 def build_tools(qa):
-    def rag_tool(query: str):
-        result = qa({"query": query})
+    def rag_tool(query: str , st_callbacks):
+        result = qa.invoke({"query": query},
+                            config={"callbacks": [st_callbacks]} if st_callbacks else {})
+        pprint.pprint(result)
         answer = result["result"]
 
-        sources = []
-        for doc in result["source_documents"]:
-            metadata = doc.metadata
-            scene = metadata.get("scene_num", "N/A")
-            timespan = metadata.get("scene_timespan", "N/A")
-            doc_name = metadata.get("doc", metadata.get("source", "Unknown"))
-            description = metadata.get("description", "")
-            sources.append(f"{scene} | {timespan} | {doc_name}\n→ {description}")
+        # sources = []
+        # for doc in result["source_documents"]:
+        #     metadata = doc.metadata
+        #     scene = metadata.get("scene_num", "N/A")
+        #     timespan = metadata.get("scene_timespan", "N/A")
+        #     doc_name = metadata.get("doc", metadata.get("source", "Unknown"))
+        #     description = metadata.get("description", "")
 
-        sources_text = "\n\n".join(sources)
-        # Combine answer and sources into the result
-        combined_result = f"{answer}\n\n📖 Sources:\n{sources_text}"
-        print(combined_result)  # For debugging
-        return combined_result
+        #     sources.append(
+        #         f"{scene} | {timespan} | {doc_name}\n→ {description}"
+        #     )
+
+        # sources_text = "\n\n".join(sources)
+
+        # combined_result = (
+        #     f"{answer}\n\n"
+        #     f"📖 Sources:\n{sources_text}"
+        # )
+
+        # pprint.pprint(combined_result)
+
+        return answer
 
     tools = [
         Tool(
@@ -74,35 +96,39 @@ def build_tools(qa):
         )
     ]
     return tools
-def run_agent(llm ,tools , query:str  , st_callbacks):
-    agent = initialize_agent(
-        tools , 
-        llm , 
-        agent = "zero-shot-react-description",
-        max_iterations = 3,
-        verbose=True ,
-        return_intermediate_steps=True
-    )
+# def run_agent(llm ,tools , query:str , st_callbacks):
+#     agent = initialize_agent(
+#         tools , 
+#         llm , 
+#         agent = "zero-shot-react-description",
+#         verbose=True ,
+#         max_iteration =3 , 
+#         return_intermediate_steps=True,
+#         handle_parsing_errors=True 
+#     )
 
 
-    response = agent.invoke({"input": query}, config={"callbacks": [st_callbacks]}, return_intermediate_steps=True)
-    final_answer = response["output"]
-    _ , retriever_text = response["intermediate_steps"][0]
-    sources = retriever_text.split("📖 Sources:")[-1].strip()
-    return final_answer , sources  
+#     response = agent.invoke({"input": query}, config={"callbacks": [st_callbacks]}, return_intermediate_steps=True)
+#     final_answer = response["output"]
+#     if response["intermediate_steps"]:
+#         _, retriever_text = response["intermediate_steps"][0]
+#     else:
+#         retriever_text = "No intermediate steps were produced."
+
+#     sources = retriever_text.split("📖 Sources:")[-1].strip()
+#     pprint.pprint(response)
+#     return final_answer , sources
+
+def run_rag(query : str , rag_tool , st_callbacks):
+    # rag_tool = tools[0].func  
+    final_answer = rag_tool(query ,  st_callbacks=st_callbacks)
+    return final_answer
 # if __name__ == "__main__":
 #     PROMPT = get_prompt()
 #     qa, llm = build_retriever(PROMPT)
 #     tools = build_tools(qa)
+#     rag_tool = tools[0].func  
 #     query = "angry cats"
-#     response , sources = run_agent(llm, tools, query)
+#     response  = run_rag(query, rag_tool)
 #     print(response)
 
-
-# {'input': 'light blue pet house', 
-#  'output': 'The light blue pet house is shown in Scene 2, between 0:15-0:20. It’s a close-up view of the entrance to the large blue cat bed, revealing its shiny, insulated interior and the misty atmosphere. Two golden British Shorthair cats stand nearby, gazing intently at it.', 
-#  'intermediate_steps': 
-#      [(AgentAction(tool='RAG Retriever', 
-#                    tool_input='query: "light blue pet house', 
-#                    log='I need to find information about a "light blue pet house" using the RAG Retriever tool.\nAction: RAG Retriever\nAction Input: query: "light blue pet house"'), 
-#        'The light blue pet house is shown in **Scene 2**. The scene takes place around **0:15-0:20** in the video. It’s a close-up view of the entrance to the large blue cat bed, revealing its shiny, insulated interior and the misty atmosphere. Two golden British Shorthair cats stand nearby, gazing intently at it.\n\n📖 Sources:\nScene 1 | 00:00–00:02 | 70_description.txt\n→ \n\nScene 7 | 00:14-00:16 | 223_description.txt\n→ \n\nScene 14 | 00:46–00:49 | 372_description.txt\n→ ')]}
