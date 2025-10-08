@@ -9,7 +9,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # agenti
 SRC_DIR = os.path.join(BASE_DIR, "Src")
 sys.path.insert(0, SRC_DIR)
 
-import rag_query as rg
+import rag.rag_query as rg
 
 # --- CSS Styling ---
 st.markdown("""

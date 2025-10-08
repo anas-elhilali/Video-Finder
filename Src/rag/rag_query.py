@@ -1,7 +1,7 @@
 from langchain.agents import initialize_agent , Tool
 from langchain_community.llms.ollama import Ollama
 from langchain.chains import RetrievalQA
-import create_store_embeddings
+import rag.create_store_embeddings as create_store_embeddings
 from langchain.prompts import PromptTemplate
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain.callbacks.manager import CallbackManager

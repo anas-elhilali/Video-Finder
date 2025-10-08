@@ -1,3 +1,6 @@
 Data/faiss/
 Data/raw/
 Data/processed/
+*.json
+Video/
+.env
