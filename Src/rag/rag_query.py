@@ -8,7 +8,6 @@ from langchain.callbacks.manager import CallbackManager
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationalRetrievalChain
-from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 import pprint
 
 def get_prompt():
@@ -88,14 +87,14 @@ def build_tools(qa):
 
         return answer
 
-    tools = [
-        Tool(
-            name="RAG Retriever",
-            func=rag_tool,
-            description="Use this tool to answer questions based on the local documents."
-        )
-    ]
-    return tools
+    # tools = [
+    #     Tool(
+    #         name="RAG Retriever",
+    #         func=rag_tool,
+    #         description="Use this tool to answer questions based on the local documents."
+    #     )
+    # ]
+    return rag_tool
 # def run_agent(llm ,tools , query:str , st_callbacks):
 #     agent = initialize_agent(
 #         tools , 
@@ -123,12 +122,12 @@ def run_rag(query : str , rag_tool , st_callbacks):
     # rag_tool = tools[0].func  
     final_answer = rag_tool(query ,  st_callbacks=st_callbacks)
     return final_answer
-# if __name__ == "__main__":
-#     PROMPT = get_prompt()
-#     qa, llm = build_retriever(PROMPT)
-#     tools = build_tools(qa)
-#     rag_tool = tools[0].func  
-#     query = "angry cats"
-#     response  = run_rag(query, rag_tool)
-#     print(response)
+if __name__ == "__main__":
+    PROMPT = get_prompt()
+    qa, llm = build_retriever(PROMPT)
+    tools = build_tools(qa)
+    rag_tool = tools[0].func  
+    query = "angry cats"
+    response  = run_rag(query, rag_tool)
+    print(response)
 

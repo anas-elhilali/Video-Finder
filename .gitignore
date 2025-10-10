@@ -4,3 +4,4 @@ Data/processed/
 *.json
 Video/
 .env
+__pycache__
