@@ -8,47 +8,55 @@ from langchain.chains import RetrievalQA
 from langchain.callbacks.manager import CallbackManager
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain.prompts import PromptTemplate
+import pandas as pd
+from langchain.globals import set_debug
+from langchain_google_genai import ChatGoogleGenerativeAI
 
-os.environ["NO_PROXY"] = "localhost,127.0.0.1,::1"
-os.environ.pop("HTTP_PROXY", None)
-os.environ.pop("HTTPS_PROXY", None)
+set_debug(True)
+script_dir = os.path.dirname(os.path.abspath(__file__))
 
-load_dotenv()
-template = """
-    You are an expert in finding scenes that describe a script your job is to help a contetn creator find scenes that support their script(story )
-    you have to follow this instructions : 
-    If the input script has multiple parts:
-    1. Break it into smaller sub-queries.
-    2. Use the 'RAG Retriever' tool for each sub-query separately.
-    3. Collect all the results.
-    4. Synthesize into a final answer, citing sources.
-    5- Always include the document name(s)(source)  for any fact mentioned.
-    6- Include the source 
-    7- Always try to answer using the retrieved documents, even if the match isn’t perfect.
-    8- If exact events are missing, do your best to reconstruct the scene from related events.
-    {context}
-    question: look for scenes in this script , each part of this script give the source  "{question}"   
-    Answer (include source):
+dotenv_path = os.path.join(script_dir, '..', '..', '.env')
+
+load_dotenv(dotenv_path=dotenv_path)
+
+def load_and_clean_csv():
+    csv_example = pd.read_csv("agentic/Data/Mrpeach-i4t_transcription.csv")
+    csv_example = csv_example[csv_example["view_count"]>8000000].reset_index(drop=True)
+    example = "\n ---another example :".join(csv_example["transcript"].astype(str))
+    return example
+
+example = load_and_clean_csv()
+
     
+template = """
+    You are an expert in generating scripts your job is to help a content creator is to generate an engaging scripts that are simialir to the provided examples . 
+    from the provided docs you have to create a story from the question you are being asked 
+    here's example to get inspired by  
+    {example}
+    create a story based on those docs chose create an engaging story 
+
+    {context}
+    question: {question}       
     
     """
 PROMPT = PromptTemplate(
         template=template , 
-        input_variables= ["context" , "question"]
+        input_variables=["context", "question", "example"]
     ) 
 # callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])
 
 doc_search = create_store_embeddings.load_faiss()
 # llm = Ollama(model="gemma3:4b" , callbacks=callback_manager)
 llm = Ollama(model="gemma3:4b" )
+# llm = ChatGoogleGenerativeAI(model = "gemini-2.5-flash" , google_api_key=os.getenv("GEMINI_API_KEYS")  )
 
 retriever = doc_search.as_retriever(search_kwargs = {"k" : 5})
-
+prompt_with_examples = PROMPT.partial(example=example)
 qa = RetrievalQA.from_chain_type(
         llm = llm ,
         retriever = retriever , 
         chain_type = "stuff",
-        chain_type_kwargs={"prompt": PROMPT},
+        chain_type_kwargs={"prompt": prompt_with_examples},
         return_source_documents=True
 
     )
@@ -79,7 +87,7 @@ def rag_tool(query: str ):
 # ai_msg = llm.invoke(messages)
 
 # print(ai_msg.content)
-query= "angry cat"
+query= "cat that being left out"
 # rag_tool = tools[0].func
 final_answer = rag_tool(query )
 
