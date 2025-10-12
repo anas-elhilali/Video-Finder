@@ -11,6 +11,8 @@ sys.path.insert(0, SRC_DIR)
 
 import rag.rag_query as rg
 
+sidebar = st.sidebar.text("Chat history")
+
 # --- CSS Styling ---
 st.markdown("""
 <style>
@@ -22,8 +24,7 @@ st.markdown("""
 # --- Setup RAG Agent ---
 PROMPT = rg.get_prompt()
 qa, llm = rg.build_retriever(PROMPT)
-tools = rg.build_tools(qa)
-rag_tool = tools[0].func  
+rag_tool = rg.build_tools(qa)
 
 st.title("Agentic RAG")
 

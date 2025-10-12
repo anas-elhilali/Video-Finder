@@ -1,4 +1,4 @@
-# from langchain_anthropic import ChatAnthropic
+from langchain_anthropic import ChatAnthropic
 import pprint
 from dotenv import load_dotenv
 import os
@@ -21,24 +21,34 @@ load_dotenv(dotenv_path=dotenv_path)
 
 def load_and_clean_csv():
     csv_example = pd.read_csv("agentic/Data/Mrpeach-i4t_transcription.csv")
-    csv_example = csv_example[csv_example["view_count"]>8000000].reset_index(drop=True)
+    csv_example = csv_example[csv_example["view_count"]>5000000].reset_index(drop=True)
     example = "\n ---another example :".join(csv_example["transcript"].astype(str))
     return example
 
 example = load_and_clean_csv()
 
     
-template = """
-    You are an expert in generating scripts your job is to help a content creator is to generate an engaging scripts that are simialir to the provided examples . 
-    from the provided docs you have to create a story from the question you are being asked 
-    here's example to get inspired by  
-    {example}
-    create a story based on those docs chose create an engaging story 
+template = template = """
+You are an expert scriptwriter. Your goal is to write an engaging script in a style similar to the examples provided below.
 
-    {context}
-    question: {question}       
-    
-    """
+--- EXAMPLES ---
+{example}
+--- END EXAMPLES ---
+
+Now, using the following context documents as a factual basis, create a story that answers the user's question.
+
+--- CONTEXT DOCUMENTS ---
+{context}
+--- END CONTEXT DOCUMENTS ---
+Based on the user's request, your job is to:
+1.  Select a compelling sequence of clips from the list above that tells a story.
+
+2.  Write a script that narrates ONLY the events in those selected clips.
+
+3. Use the docs given and create a story base on them , make it compelling and similiar to the examples given.
+Question: {question}
+Engaging Script:
+"""
 PROMPT = PromptTemplate(
         template=template , 
         input_variables=["context", "question", "example"]
@@ -47,10 +57,13 @@ PROMPT = PromptTemplate(
 
 doc_search = create_store_embeddings.load_faiss()
 # llm = Ollama(model="gemma3:4b" , callbacks=callback_manager)
-llm = Ollama(model="gemma3:4b" )
+os.environ["ANTHROPIC_API_KEY"] = os.getenv("ANTHROPIC_API_KEY")
+# llm = Ollama(model="gemma3:4b" )
+llm = ChatAnthropic(model="claude-sonnet-4-5")
+
 # llm = ChatGoogleGenerativeAI(model = "gemini-2.5-flash" , google_api_key=os.getenv("GEMINI_API_KEYS")  )
 
-retriever = doc_search.as_retriever(search_kwargs = {"k" : 5})
+retriever = doc_search.as_retriever(search_kwargs = {"k" : 100})
 prompt_with_examples = PROMPT.partial(example=example)
 qa = RetrievalQA.from_chain_type(
         llm = llm ,

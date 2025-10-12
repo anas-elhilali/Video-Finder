@@ -15,14 +15,12 @@ def get_prompt():
     You are an expert in finding scenes that describe a script your job is to help a contetn creator find scenes that support their script(story )
     you have to follow this instructions : 
     If the input script has multiple parts:
-    1. Break it into smaller sub-queries.
-    2. Use the 'RAG Retriever' tool for each sub-query separately.
-    3. Collect all the results.
-    4. Synthesize into a final answer, citing sources.
-    5- Always include the document name(s)(source)  for any fact mentioned.
-    6- Include the source 
-    7- Always try to answer using the retrieved documents, even if the match isn’t perfect.
-    8- If exact events are missing, do your best to reconstruct the scene from related events.
+    . Collect all the results.
+    . Synthesize into a final answer, citing sources.
+    - Always include the document name(s)(source)  for any fact mentioned.
+    - Include the source 
+    - Always try to answer using the retrieved documents, even if the match isn’t perfect.
+    - If exact events are missing, do your best to reconstruct the scene from related events.
     {context}
     question: look for scenes in this script , each part of this script give the source  "{question}"   
     Answer (include source):
@@ -122,12 +120,12 @@ def run_rag(query : str , rag_tool , st_callbacks):
     # rag_tool = tools[0].func  
     final_answer = rag_tool(query ,  st_callbacks=st_callbacks)
     return final_answer
-if __name__ == "__main__":
-    PROMPT = get_prompt()
-    qa, llm = build_retriever(PROMPT)
-    tools = build_tools(qa)
-    rag_tool = tools[0].func  
-    query = "angry cats"
-    response  = run_rag(query, rag_tool)
-    print(response)
+# if __name__ == "__main__":
+#     PROMPT = get_prompt()
+#     qa, llm = build_retriever(PROMPT)
+#     tools = build_tools(qa)
+#     rag_tool = tools[0].func  
+#     query = "angry cats"
+#     response  = run_rag(query, rag_tool)
+#     print(response)
 
