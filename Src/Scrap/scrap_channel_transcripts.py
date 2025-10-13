@@ -15,7 +15,7 @@ def get_videoids(channel_url , numb_videos):
         video_ids = [entry['id'] for entry in info['entries']]
         number_videos = len(info['entries'])
     return video_ids , number_videos
-def get_transcript(video_ids ):
+def get_transcript(video_ids , lang):
     channel_metadata = []
     for video_id in video_ids:
             url = f"https://www.youtube.com/shorts/{video_id}"
@@ -39,7 +39,7 @@ def get_transcript(video_ids ):
                     view_count = info.get('view_count')
                     
                     # Access subtitles from the info dictionary
-                    subtitles = info.get('subtitles', {}).get("en") or info.get('automatic_captions', {}).get(f"en")
+                    subtitles = info.get('subtitles', {}).get(lang) or info.get('automatic_captions', {}).get(lang)
                     
                     if subtitles:
                         # Find the SRT subtitle entry

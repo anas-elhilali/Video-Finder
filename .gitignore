@@ -1,5 +1,6 @@
 Data/faiss/
 Data/raw/
+Data/
 Data/processed/
 *.json
 Video/
