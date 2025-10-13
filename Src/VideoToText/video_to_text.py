@@ -20,8 +20,6 @@ if you could make the description short enough while keep the details do it , gi
 "Scene 1 (00:00–00:01): Close-up of a golden British Shorthair cat lying on a pink mat with red cherry patterns.
 """
 
-VIDEO_FOLDER = "./agentic/Video"  
-DESCRIPTION_FOLDER = "./agentic/Data/kitty_milk_descriptions" 
 
 
 def clean_filename(text: str) -> str:
@@ -83,6 +81,9 @@ def analyze_and_create_description(video_path: str, model: GenerativeModel, desc
 
 if __name__ == '__main__':
         try:
+            Project_name = "cat"
+            VIDEO_FOLDER =f"agentic/Video/{Project_name}"
+            DESCRIPTION_FOLDER = f"./agentic/Data/Project/{Project_name}" 
             os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = SERVICE_ACCOUNT_KEY_FILE
             vertexai.init(project=PROJECT_ID, location=LOCATION)
             gemini_model = GenerativeModel(GEMINI_MODEL)

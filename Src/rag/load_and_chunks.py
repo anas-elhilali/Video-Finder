@@ -4,7 +4,7 @@ import re
 import json
 
 
-def chunking_docs(raw_docs  , file_names):
+def chunking_docs(raw_docs  , file_names ,project_name):
     processed_docs = []
     for idx , doc in enumerate(raw_docs):
         try:
@@ -19,7 +19,7 @@ def chunking_docs(raw_docs  , file_names):
                 
         except Exception as e:
                      print("Error" , e)
-        with open('agentic/Data/processed/processed_docs.json' , 'w' , encoding = 'utf-8') as d:
+        with open(f'agentic/Data/Projects/processed/{project_name}/processed_docs.json' , 'w' , encoding = 'utf-8') as d:
             json.dump(processed_docs , d , ensure_ascii=False , indent=4)
     return processed_docs
 def load_raw_docs(raw_folder_path):
@@ -33,7 +33,7 @@ def load_raw_docs(raw_folder_path):
         raw_documents.append(raw_docs[0].page_content)
     return raw_documents  ,file_names
 if __name__ == "__main__":
-    raw_folder_path = './agentic/Data/raw'
+    project_name ="white cat"
+    raw_folder_path = f'./agentic/Data/Projects/{project_name}/raw'
     raw_documents , file_names = load_raw_docs(raw_folder_path)
     processed_docs  = chunking_docs(raw_documents , file_names)
-    print(processed_docs[:5])

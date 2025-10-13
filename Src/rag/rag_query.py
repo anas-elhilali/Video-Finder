@@ -1,7 +1,7 @@
+import sys
 from langchain.agents import initialize_agent , Tool
 from langchain_community.llms.ollama import Ollama
 from langchain.chains import RetrievalQA
-import rag.create_store_embeddings as create_store_embeddings
 from langchain.prompts import PromptTemplate
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain.callbacks.manager import CallbackManager
@@ -9,18 +9,24 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationalRetrievalChain
 import pprint
-
+import os 
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SRC_DIR = os.path.join(BASE_DIR, "Src")
+sys.path.insert(0, SRC_DIR)
+import rag.create_store_embeddings as create_store_embeddings
 def get_prompt():
     template = """
     You are an expert in finding scenes that describe a script your job is to help a contetn creator find scenes that support their script(story )
     you have to follow this instructions : 
     If the input script has multiple parts:
-    . Collect all the results.
-    . Synthesize into a final answer, citing sources.
-    - Always include the document name(s)(source)  for any fact mentioned.
-    - Include the source 
-    - Always try to answer using the retrieved documents, even if the match isn’t perfect.
-    - If exact events are missing, do your best to reconstruct the scene from related events.
+    1. Break it into smaller sub-queries.
+    2. Use the 'RAG Retriever' tool for each sub-query separately.
+    3. Collect all the results.
+    4. Synthesize into a final answer, citing sources.
+    5- Always include the document name(s)(source)  for any fact mentioned.
+    6- Include the source 
+    7- Always try to answer using the retrieved documents, even if the match isn’t perfect.
+    8- If exact events are missing, do your best to reconstruct the scene from related events.
     {context}
     question: look for scenes in this script , each part of this script give the source  "{question}"   
     Answer (include source):
@@ -55,8 +61,8 @@ def build_retriever(PROMPT):
     return qa , llm
 
 
-def build_tools(qa):
-    def rag_tool(query: str , st_callbacks):
+# def build_tools(qa):
+def rag_tool(qa , query: str , st_callbacks):
         result = qa.invoke({"query": query},
                             config={"callbacks": [st_callbacks]} if st_callbacks else {})
         pprint.pprint(result)
@@ -92,7 +98,7 @@ def build_tools(qa):
     #         description="Use this tool to answer questions based on the local documents."
     #     )
     # ]
-    return rag_tool
+    # return rag_tool
 # def run_agent(llm ,tools , query:str , st_callbacks):
 #     agent = initialize_agent(
 #         tools , 
@@ -116,15 +122,15 @@ def build_tools(qa):
 #     pprint.pprint(response)
 #     return final_answer , sources
 
-def run_rag(query : str , rag_tool , st_callbacks):
+def run_rag(qa , query : str  , st_callbacks):
     # rag_tool = tools[0].func  
-    final_answer = rag_tool(query ,  st_callbacks=st_callbacks)
+    final_answer = rag_tool(qa , query ,  st_callbacks=st_callbacks)
     return final_answer
 # if __name__ == "__main__":
 #     PROMPT = get_prompt()
 #     qa, llm = build_retriever(PROMPT)
-#     tools = build_tools(qa)
-#     rag_tool = tools[0].func  
+#     # tools = build_tools(qa)
+#     # rag_tool = tools[0].func  
 #     query = "angry cats"
 #     response  = run_rag(query, rag_tool)
 #     print(response)

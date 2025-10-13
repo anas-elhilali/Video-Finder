@@ -6,8 +6,8 @@ from langchain.schema import Document
 
 embeddings = HuggingFaceEmbeddings(model_name = "all-MiniLM-L6-v2"  , model_kwargs={"device": "cuda"})
 
-def save_faiss():
-    with open('agentic/Data/processed/processed_docs.json' , 'r' , encoding='utf-8') as f:
+def save_faiss(project_name):
+    with open(f'agentic/Data/Projects/{project_name}/processed/processed_docs.json' , 'r' , encoding='utf-8') as f:
         processed_doc = json.load(f)
 # vec_a = embeddings.embed_query(processed_doc[0]['description'])
 # vec_b = embeddings.embed_query("kittens inside a box")
@@ -28,13 +28,13 @@ def save_faiss():
         for scene in processed_doc
     ]
     docsearch = FAISS.from_documents(docs , embeddings) 
-    docsearch.save_local("agentic/Data/faiss/faiss_index")
+    docsearch.save_local("agentic/Data/Projects/{project_name}/faiss/faiss_index")
 
-def load_faiss():
-    docsearch = FAISS.load_local("agentic/Data/faiss/faiss_index" , embeddings ,  allow_dangerous_deserialization=True)
+def load_faiss(project_name):
+    docsearch = FAISS.load_local("agentic/Data/Projects/{project_name}/faiss/faiss_index" , embeddings ,  allow_dangerous_deserialization=True)
 
     query = "kitten inside a box"
     results = docsearch.similarity_search(query , k=2)
     return docsearch
-if __name__ == "__main__":
-    save_faiss()
+# if __name__ == "__main__":
+#     save_faiss()
