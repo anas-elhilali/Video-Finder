@@ -41,12 +41,12 @@ def get_prompt():
 
 
   
-def build_retriever(PROMPT):
+def build_retriever(PROMPT , project_name):
     callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])
     
     llm = Ollama(model="gemma3:4b" , callbacks=callback_manager)
     # llm = ChatGoogleGenerativeAI(model = "gemini-2.5-flash" , google_api_key="---" , streaming = True , callback_manager = callback_manager)
-    docsearch = create_store_embeddings.load_faiss()
+    docsearch = create_store_embeddings.load_faiss(project_name)
 
     retriever = docsearch.as_retriever(search_kwargs ={"k" : 50})
     print(retriever)

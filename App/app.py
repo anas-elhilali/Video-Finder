@@ -1,23 +1,25 @@
 import os
-
-import re
 import streamlit as st
 import sys
 import time
 import vertexai
-from vertexai.generative_models import GenerativeModel, Part
+from vertexai.generative_models import GenerativeModel
 from langchain_community.callbacks.streamlit import StreamlitCallbackHandler
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from Src.VideoToText import video_to_text as vtt
 import pandas as pd
 from Src.Scrap import scrap_channel_transcripts as yt
-from datetime import datetime
 import logic
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC_DIR = os.path.join(BASE_DIR, "Src")
 sys.path.insert(0, SRC_DIR)
 
 import rag.rag_query as rg
+import rag.load_and_chunks as lc
+import rag.create_store_embeddings as cse
+# os.environ["HTTP_PROXY"] = "http://10.8.25.15:8089"
+# os.environ["HTTPS_PROXY"] = "http://10.8.25.15:8089"
+
 import utils
 st.set_page_config(
     page_title="Content Automation",
@@ -150,7 +152,6 @@ elif st.session_state.clicked_project is None:
     st.markdown('</div>', unsafe_allow_html=True)
 
 else:
-    # PROJECT VIEW WITH CHAT (ChatGPT-style layout)
     
     # Sidebar
     with st.sidebar:
@@ -182,7 +183,6 @@ else:
     base_path = "./agentic/Video"
     project_path = os.path.join(base_path, st.session_state.clicked_project)
     
-    # Process videos if not done yet
     if not st.session_state.project_processed:
         st.markdown("<div style='text-align: center; padding: 60px 20px;'>", unsafe_allow_html=True)
         st.markdown("### 🎬 Processing Videos...")
@@ -204,15 +204,21 @@ else:
                 vertexai.init(project=PROJECT_ID, location=LOCATION)
                 gemini_model = GenerativeModel(GEMINI_MODEL)
                 
-                DESCRIPTION_FOLDER = "./agentic/Data/descriptions"
-                os.makedirs(DESCRIPTION_FOLDER, exist_ok=True)
+                project_data_path = f"./agentic/Data/Projects/{st.session_state.clicked_project}"
+                RAW_FOLDER = f"{project_data_path}/raw"
+                PROCESSED_FOLDER = f"{project_data_path}/processed"
+                FAISS_FOLDER = f"{project_data_path}/faiss"
+                
+                os.makedirs(RAW_FOLDER, exist_ok=True)
+                os.makedirs(PROCESSED_FOLDER, exist_ok=True)
+                os.makedirs(FAISS_FOLDER, exist_ok=True)
                 
                 for i, filename in enumerate(video_files):
                     current_video = os.path.join(project_path, filename)
                     status_text.markdown(f"🛠️ **Processing:** `{filename}`")
                     
                     try:
-                        vtt.analyze_and_create_description(current_video, gemini_model, DESCRIPTION_FOLDER)
+                        vtt.analyze_and_create_description(current_video, gemini_model, RAW_FOLDER)
                     except Exception as e:
                         st.error(f"❌ Error: {e}")
                     
@@ -222,17 +228,38 @@ else:
                     if i < len(video_files) - 1:
                         time.sleep(2)
                 
-                st.session_state.project_processed = True
-                st.success("✅ Videos processed successfully!")
-                st.rerun()
+                status_text.markdown("📊 **Indexing videos...**")
+                progress_bar.progress(0)
                 
+                # Load raw documents
+                raw_folder_path = RAW_FOLDER  # Utiliser la variable créée
+                raw_documents, file_names = lc.load_raw_docs(raw_folder_path)
+                
+                progress_bar.progress(0.33)
+                status_text.markdown("📝 **Chunking documents...**")
+                
+                # Chunk documents
+                processed_docs = lc.chunking_docs(raw_documents, file_names, st.session_state.clicked_project)
+                
+                progress_bar.progress(0.66)
+                status_text.markdown("🔍 **Creating FAISS index...**")
+                
+                # Create FAISS index
+                cse.save_faiss(st.session_state.clicked_project)
+                
+                progress_bar.progress(1.0)
+                status_text.markdown("✅ **Indexing complete!**")
+                
+                st.session_state.project_processed = True
+                st.success("✅ Videos processed and indexed successfully!")
+                time.sleep(1)
+                st.rerun()    
             except Exception as e:
                 st.error(f"❌ Processing error: {e}")
+            
         else:
             st.warning("⚠️ No videos found in this project")
         
-        st.markdown("</div>", unsafe_allow_html=True)
-    
     else:
         # CHAT INTERFACE
         if st.session_state.current_tool == "finder":
@@ -271,7 +298,8 @@ else:
                         try:
                             # Lazy load RAG components only when needed
                             PROMPT = rg.get_prompt()
-                            qa, llm = rg.build_retriever(PROMPT)
+                            qa, llm = rg.build_retriever(PROMPT, st.session_state.clicked_project)
+
                             
                             st_callback = StreamlitCallbackHandler(parent_container=st.container())
                             response = rg.run_rag(qa , user_input,  st_callback)

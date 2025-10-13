@@ -19,7 +19,9 @@ def chunking_docs(raw_docs  , file_names ,project_name):
                 
         except Exception as e:
                      print("Error" , e)
-        with open(f'agentic/Data/Projects/processed/{project_name}/processed_docs.json' , 'w' , encoding = 'utf-8') as d:
+        processed_folder = f'agentic/Data/Projects/{project_name}/processed'
+        os.makedirs(processed_folder, exist_ok=True)   
+        with open(f'{processed_folder}/processed_docs.json', 'w', encoding='utf-8') as d:
             json.dump(processed_docs , d , ensure_ascii=False , indent=4)
     return processed_docs
 def load_raw_docs(raw_folder_path):

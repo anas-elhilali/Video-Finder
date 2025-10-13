@@ -1,3 +1,4 @@
+import os
 from langchain_huggingface import HuggingFaceEmbeddings
 import json 
 import numpy as np
@@ -7,7 +8,7 @@ from langchain.schema import Document
 embeddings = HuggingFaceEmbeddings(model_name = "all-MiniLM-L6-v2"  , model_kwargs={"device": "cuda"})
 
 def save_faiss(project_name):
-    with open(f'agentic/Data/Projects/{project_name}/processed/processed_docs.json' , 'r' , encoding='utf-8') as f:
+    with open(f'agentic/Data/Projects/{project_name}/processed/processed_docs.json', 'r', encoding='utf-8') as f:
         processed_doc = json.load(f)
 # vec_a = embeddings.embed_query(processed_doc[0]['description'])
 # vec_b = embeddings.embed_query("kittens inside a box")
@@ -28,13 +29,24 @@ def save_faiss(project_name):
         for scene in processed_doc
     ]
     docsearch = FAISS.from_documents(docs , embeddings) 
-    docsearch.save_local("agentic/Data/Projects/{project_name}/faiss/faiss_index")
+    faiss_folder = f"agentic/Data/Projects/{project_name}/faiss"
+    os.makedirs(faiss_folder, exist_ok=True)
+    
+    docsearch.save_local(f"{faiss_folder}/faiss_index")
 
 def load_faiss(project_name):
-    docsearch = FAISS.load_local("agentic/Data/Projects/{project_name}/faiss/faiss_index" , embeddings ,  allow_dangerous_deserialization=True)
-
-    query = "kitten inside a box"
-    results = docsearch.similarity_search(query , k=2)
+    faiss_path = f"agentic/Data/Projects/{project_name}/faiss/faiss_index"
+    
+    if not os.path.exists(faiss_path):
+        raise FileNotFoundError(f"FAISS index not found at: {faiss_path}")
+    
+    docsearch = FAISS.load_local(
+        faiss_path, 
+        embeddings, 
+        allow_dangerous_deserialization=True
+    )
+    
+    print(f"✅ FAISS index loaded from: {faiss_path}")
     return docsearch
 # if __name__ == "__main__":
 #     save_faiss()
