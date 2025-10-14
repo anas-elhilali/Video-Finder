@@ -10,15 +10,17 @@ from Src.VideoToText import video_to_text as vtt
 import pandas as pd
 from Src.Scrap import scrap_channel_transcripts as yt
 import logic
+ 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC_DIR = os.path.join(BASE_DIR, "Src")
 sys.path.insert(0, SRC_DIR)
 
+import Scrap.scrap_channel_videos as scrap_videos
 import rag.rag_query as rg
 import rag.load_and_chunks as lc
 import rag.create_store_embeddings as cse
-# os.environ["HTTP_PROXY"] = "http://10.8.25.15:8089"
-# os.environ["HTTPS_PROXY"] = "http://10.8.25.15:8089"
+# os.environ["HTTP_PROXY"] = "http://10.8.11.23:8089"
+# os.environ["HTTPS_PROXY"] = "http://10.8.11.23:8089"
 
 import utils
 st.set_page_config(
@@ -71,7 +73,11 @@ if st.session_state.show_create_modal:
         os.makedirs(base_path, exist_ok=True)
         
         project_name = st.text_input("Project Name", placeholder="Enter project name...", key="create_project_name")
-        scrape_url = st.text_input("YouTube URL (Optional)", placeholder="youtube.com/...", key="create_youtube_url")
+        channel_url = st.text_input("YouTube URL (Optional)", placeholder="youtube.com/...", key="create_youtube_url")
+        if channel_url:
+            number_videos = st.number_input("number of videos " , format="%d" , step = 1 ,  max_value=600 , min_value=1)
+            
+        
         uploaded_files = st.file_uploader("Upload Videos", type=['mp4', 'mov', 'avi', 'wmv'], accept_multiple_files=True, key="create_upload_videos")
         
         st.markdown("<div style='margin: 20px 0;'></div>", unsafe_allow_html=True)
@@ -90,8 +96,10 @@ if st.session_state.show_create_modal:
                             with open(file_path, "wb") as f:
                                 f.write(video_file.getbuffer())
                     
-                    if scrape_url:
+                    if channel_url:
                         st.info("🔄 Scraping YouTube videos...")
+                        video_ids = scrap_videos.channel_videoids(channel_url , number_videos)
+                        scrap_videos.download_videos(video_ids , project_name)
                     
                     st.session_state.clicked_project = project_name
                     st.session_state.show_create_modal = False
@@ -163,12 +171,12 @@ else:
             st.rerun()
         
         st.markdown("**Tools**")
-        if st.button("🔍 RAG Finder", key="tool_finder", use_container_width=True):
+        if st.button("🔍 ClipFinder", key="tool_finder", use_container_width=True):
             st.session_state.current_tool = "finder"
             st.session_state.chat_history = []
             st.rerun()
         
-        if st.button("✍️ Writer GPT", key="tool_writer", use_container_width=True):
+        if st.button("✍️ WriterGPT", key="tool_writer", use_container_width=True):
             st.session_state.current_tool = "writer"
             st.session_state.chat_history = []
             st.rerun()
@@ -177,6 +185,8 @@ else:
         
         if st.button("⬅️ Back to Projects", use_container_width=True):
             logic.clear_project()
+            st.session_state.chat_history = [] 
+            rg.clear_cache()
             st.rerun()
     
     # Main content area
@@ -272,7 +282,7 @@ else:
                 <div style='display: flex; flex-direction: column; align-items: center; justify-content: center; 
                             height: 70vh; text-align: center;'>
                     <h1 style='color: rgba(255, 255, 255, 0.8); font-size: 48px; margin-bottom: 20px;'>
-                        🔍 RAG Finder
+                        🔍 ClipFinder
                     </h1>
                     <p style='color: rgba(255, 255, 255, 0.6); font-size: 18px;'>
                         Search and find clips from your videos
@@ -296,14 +306,13 @@ else:
                 with st.chat_message("assistant"):
                     with st.spinner("🤔 Searching..."):
                         try:
-                            # Lazy load RAG components only when needed
                             PROMPT = rg.get_prompt()
                             qa, llm = rg.build_retriever(PROMPT, st.session_state.clicked_project)
 
                             
                             st_callback = StreamlitCallbackHandler(parent_container=st.container())
                             response = rg.run_rag(qa , user_input,  st_callback)
-                            
+
                             st.session_state.chat_history[-1]["bot"] = response
                             st.write(response)
                         except Exception as e:
@@ -321,22 +330,24 @@ else:
                         ✍️ Writer GPT
                     </h1>
                     <p style='color: rgba(255, 255, 255, 0.6); font-size: 18px;'>
-                        Generate descriptions, summaries, or content based on your videos
-                    </p>
+                        Generate Stories and Scripts based on your videos
+                    
+                     💡Writer GPT  coming soon...
+                   </p>
                 </div>
                 """, unsafe_allow_html=True)
-            else:
-                for i, chat in enumerate(st.session_state.chat_history):
-                    with st.chat_message("user"):
-                        st.write(chat["user"])
-                    with st.chat_message("assistant"):
-                        st.write(chat["bot"])
+            # else:
+            #     for i, chat in enumerate(st.session_state.chat_history):
+            #         with st.chat_message("user"):
+            #             st.write(chat["user"])
+            #         with st.chat_message("assistant"):
+            #             st.write(chat["bot"])
             
-            if user_input := st.chat_input("Ask Writer GPT to generate content..."):
-                st.session_state.chat_history.append({"user": user_input, "bot": ""})
+            # if user_input := st.chat_input("Ask Writer GPT to generate content..."):
+            #     st.session_state.chat_history.append({"user": user_input, "bot": ""})
                 
-                with st.chat_message("user"):
-                    st.write(user_input)
+            #     with st.chat_message("user"):
+            #         st.write(user_input)
                 
-                with st.chat_message("assistant"):
-                    st.info("💡 Writer GPT feature coming soon...")
+            #     with st.chat_message("assistant"):
+            #         st.info("💡 Writer GPT feature coming soon...")
