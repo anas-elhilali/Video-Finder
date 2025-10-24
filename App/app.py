@@ -1,4 +1,5 @@
 import os
+import re
 import streamlit as st
 import sys
 import time
@@ -19,8 +20,8 @@ import Scrap.scrap_channel_videos as scrap_videos
 import rag.rag_query as rg
 import rag.load_and_chunks as lc
 import rag.create_store_embeddings as cse
-# os.environ["HTTP_PROXY"] = "http://10.8.11.23:8089"
-# os.environ["HTTPS_PROXY"] = "http://10.8.11.23:8089"
+# os.environ["HTTP_PROXY"] = "http://10.8.22.5:8089"
+# os.environ["HTTPS_PROXY"] = "http://10.8.22.5:8089"
 
 import utils
 st.set_page_config(
@@ -186,7 +187,6 @@ else:
         if st.button("⬅️ Back to Projects", use_container_width=True):
             logic.clear_project()
             st.session_state.chat_history = [] 
-            rg.clear_cache()
             st.rerun()
     
     # Main content area
@@ -294,7 +294,7 @@ else:
                     with st.chat_message("user"):
                         st.write(chat["user"])
                     with st.chat_message("assistant"):
-                        st.write(chat["bot"])
+                        st.markdown(chat["bot"] , unsafe_allow_html=True)
             
             # Chat input at bottom
             if user_input := st.chat_input("Search for a clip or ask a question..."):
@@ -308,13 +308,34 @@ else:
                         try:
                             PROMPT = rg.get_prompt()
                             qa, llm = rg.build_retriever(PROMPT, st.session_state.clicked_project)
-
-                            
                             st_callback = StreamlitCallbackHandler(parent_container=st.container())
-                            response = rg.run_rag(qa , user_input,  st_callback)
+                            response_generator = rg.run_rag(qa, user_input , st_callback)
 
-                            st.session_state.chat_history[-1]["bot"] = response
-                            st.write(response)
+                            # Collect chunks while displaying
+                            response_chunks = []
+                            for chunk in response_generator:
+                                response_chunks.append(chunk)
+                                
+                            response = "".join(response_chunks)
+
+
+                            pattern = r'(\./agentic/Video/[^/]+/\d+\.webm)'
+                            video_links = list(set(re.findall(pattern, response)))
+                            if video_links:
+                                
+                                for i, link in enumerate(video_links, 1):
+                                    filename = link.split('/')[-1]
+                                    project_name = link.split('/')[-2]
+                                    
+                                    # Point to the HTTP server
+                                    http_url = f"http://localhost:8000/{link.lstrip('./')}"
+                                    
+                                    links = f'{i}. <a href="{http_url}" target="_blank">▶️ {project_name}/{filename}</a>'
+                            final_response = "\n".join([response , links])
+                            st.session_state.chat_history[-1]["bot"] = final_response 
+                            st.markdown(response)
+                            st.markdown(links ,unsafe_allow_html=True)
+                            
                         except Exception as e:
                             st.error(f"❌ Error: {e}")
         

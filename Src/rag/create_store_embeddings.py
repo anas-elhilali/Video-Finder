@@ -3,7 +3,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 import json 
 import numpy as np
 from langchain_community.vectorstores import FAISS
-from langchain.schema import Document
+from langchain_classic.schema import Document
 
 embeddings = HuggingFaceEmbeddings(model_name = "all-MiniLM-L6-v2"  , model_kwargs={"device": "cuda"})
 
@@ -17,13 +17,15 @@ def save_faiss(project_name):
 #     return np.dot(vec_a, vec_b) / (np.linalg.norm(vec_a) * np.linalg.norm(vec_b))
 # similarity = cosine_similarity(vec_a , vec_b)
 # print(similarity)
+    
     docs = [
         Document(
-            page_content=f"{scene['description']}\n source : {scene['doc']}",
+            page_content=f"{scene['description']}\n source : {scene['video_path']} , timespan : {scene['scene_timespan']}",
             metadata={
                 "scene_num": scene['scene_num'],
                 "scene_timespan": scene['scene_timespan'],
-                "doc": scene['doc']
+                "doc": scene['doc'],
+                "video_path" :scene['video_path']
             }
         )
         for scene in processed_doc
@@ -48,5 +50,5 @@ def load_faiss(project_name):
     
     print(f"✅ FAISS index loaded from: {faiss_path}")
     return docsearch
-# if __name__ == "__main__":
-#     save_faiss()
+if __name__ == "__main__":
+    save_faiss("kitty_milk")

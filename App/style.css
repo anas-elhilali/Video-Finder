@@ -9,6 +9,95 @@ body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
+/* =============================
+   Global Theme & Typography
+   ============================= */
+:root {
+    --bg-app: linear-gradient(135deg, #0f1419 0%, #1a1f2e 100%);
+    --bg-surface: linear-gradient(135deg, #151b26 0%, #1b2232 100%);
+    --bg-surface-2: linear-gradient(135deg, #1a2332 0%, #232e3f 100%);
+    --border: rgba(255, 255, 255, 0.12);
+    --border-strong: rgba(255, 255, 255, 0.2);
+    --text-1: rgba(255, 255, 255, 0.95);
+    --text-2: rgba(255, 255, 255, 0.7);
+    --text-3: rgba(255, 255, 255, 0.55);
+    --accent-1: #00d4ff;
+    --accent-2: #0099cc;
+    --accent-grad: linear-gradient(135deg, var(--accent-1) 0%, var(--accent-2) 100%);
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --shadow-1: 0 8px 16px rgba(0, 0, 0, 0.25);
+    --shadow-2: 0 20px 60px rgba(0, 0, 0, 0.45);
+}
+
+html, body {
+    color: var(--text-1);
+    background: var(--bg-app);
+}
+
+/* Streamlit containers */
+[data-testid="stAppViewContainer"] > .main {
+    padding-top: 12px;
+}
+
+/* App Header */
+.app-header {
+    position: sticky;
+    top: 0;
+    z-index: 999;
+    background: var(--bg-surface-2);
+    border-bottom: 1px solid var(--border);
+    box-shadow: var(--shadow-1);
+}
+.app-header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 18px;
+}
+.app-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 700;
+    font-size: 18px;
+    color: var(--text-1);
+}
+.app-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.badge {
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--border);
+    color: var(--text-2);
+    font-size: 12px;
+}
+
+/* Sidebar */
+[data-testid="stSidebar"] {
+    background: var(--bg-surface);
+    border-right: 1px solid var(--border);
+}
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h3,
+[data-testid="stSidebar"] p,
+[data-testid="stSidebar"] button {
+    color: var(--text-1) !important;
+}
+[data-testid="stSidebar"] button {
+    border-radius: var(--radius-sm) !important;
+    border: 1px solid var(--border) !important;
+    background: rgba(255,255,255,0.06) !important;
+}
+[data-testid="stSidebar"] button:hover {
+    background: rgba(255,255,255,0.12) !important;
+}
+
 /* Project Cards */
 .cards-container {
     display: grid;
@@ -69,13 +158,13 @@ body {
 }
 
 .modal-content {
-    background: linear-gradient(135deg, #1a2332 0%, #232e3f 100%);
-    border-radius: 20px;
+    background: var(--bg-surface-2);
+    border-radius: var(--radius-lg);
     padding: 40px;
     max-width: 600px;
     width: 90%;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: var(--shadow-2);
+    border: 1px solid var(--border);
 }
 
 .modal-header {
@@ -103,9 +192,9 @@ body {
     width: 100%;
     padding: 12px 16px;
     background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    color: white;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-1);
     font-size: 14px;
     transition: all 0.3s ease;
 }
@@ -125,9 +214,9 @@ body {
 .btn-primary {
     flex: 1;
     padding: 12px 24px;
-    background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+    background: var(--accent-grad);
     border: none;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     color: white;
     font-weight: 600;
     cursor: pointer;
@@ -143,8 +232,8 @@ body {
     flex: 1;
     padding: 12px 24px;
     background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 8px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
     color: white;
     font-weight: 600;
     cursor: pointer;
@@ -160,7 +249,7 @@ body {
     display: flex;
     flex-direction: column;
     height: 100vh;
-    background: linear-gradient(135deg, #0f1419 0%, #1a1f2e 100%);
+    background: var(--bg-app);
 }
 
 .chat-messages {
@@ -204,7 +293,7 @@ body {
 .chat-input-area {
     padding: 20px;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
-    background: linear-gradient(135deg, #1a2332 0%, #232e3f 100%);
+    background: var(--bg-surface-2);
 }
 
 .tool-tabs {
@@ -226,7 +315,7 @@ body {
 }
 
 .tool-tab.active {
-    background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+    background: var(--accent-grad);
     color: white;
     border-color: transparent;
 }
@@ -240,8 +329,9 @@ body {
 .progress-container {
     padding: 20px;
     background: rgba(255, 255, 255, 0.05);
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     margin: 16px 0;
+    border: 1px solid var(--border);
 }
 
 .progress-bar {
@@ -255,7 +345,65 @@ body {
 
 .progress-fill {
     height: 100%;
-    background: linear-gradient(90deg, #00d4ff 0%, #0099cc 100%);
+    background: linear-gradient(90deg, var(--accent-1) 0%, var(--accent-2) 100%);
     border-radius: 3px;
     transition: width 0.3s ease;
+}
+
+/* Form Controls (Streamlit overrides) */
+.stButton > button {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--border);
+    color: var(--text-1);
+    border-radius: var(--radius-sm);
+    transition: all .2s ease;
+}
+.stButton > button:hover {
+    background: rgba(255,255,255,0.12);
+    border-color: var(--border-strong);
+}
+.stTextInput > div > div > input,
+.stNumberInput input {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    color: var(--text-1);
+    border-radius: var(--radius-sm);
+}
+.stTextInput > div > div > input:focus,
+.stNumberInput input:focus {
+    border-color: rgba(100, 200, 255, 0.5);
+    outline: none;
+}
+
+/* File Uploader */
+[data-testid="stFileUploader"] section {
+    border: 1px dashed var(--border);
+    background: rgba(255,255,255,0.04);
+    border-radius: var(--radius-md);
+}
+[data-testid="stFileUploader"] div[data-testid="stFileUploaderDropzone"] {
+    background: transparent !important;
+}
+
+/* Scrollbar */
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
+*::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.18);
+    border-radius: 10px;
+}
+*::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.28); }
+
+/* Tables */
+.stDataFrame, .stTable {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+/* Animations */
+.fade-in { animation: fadeIn .25s ease-in both; }
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
 }
