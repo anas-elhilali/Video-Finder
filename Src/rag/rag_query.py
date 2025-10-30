@@ -8,33 +8,32 @@ from langchain_classic.chains import ConversationalRetrievalChain
 from langchain_classic.memory import  ConversationBufferMemory
 from langchain_classic.callbacks.manager import CallbackManager
 from langchain_classic.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
+from dotenv import load_dotenv
 
-os.environ['HTTP_PROXY'] = 'http://10.8.32.11:8089'
-os.environ['HTTPS_PROXY'] = 'http://10.8.32.11:8089'
+
+script_dir = os.path.dirname(os.path.abspath(__file__))
+dotenv_path = os.path.join(script_dir,"..", '..', '.env')
+load_dotenv(dotenv_path=dotenv_path)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC_DIR = os.path.join(BASE_DIR, "Src")
-sys.path.insert(0, SRC_DIR)
-gemini_api_key = os.getenv("GEMINI_API_KEYS")
+sys.path.insert(0, BASE_DIR)
+gemini_api_key = os.getenv("GEMINI_API_KEY")
 
 
 
 def get_prompt():
     template = """
-    You are an expert in finding scenes that describe a script your job is to help a contetn creator find scenes that support their script(story )
+    You are an expert in finding scenes that describe a script your job is to help a content creator find scenes that support their script(story )
     =====previous conversation=====
     Previous conversation:
     {chat_history}
     =====instruction=====
     you have to follow this instructions : 
     If the input script has multiple parts:
-    1. Break it into smaller sub-queries.
-    2. Use the 'RAG Retriever' tool for each sub-query separately.
-    3. Collect all the results.
-    4. Synthesize into a final answer, citing sources.
-    5- Always include the document name(s)(source)  for any fact mentioned.
-    6- Include the source 
-    7- Always try to answer using the retrieved documents, even if the match isn’t perfect.
-    8- If exact events are missing, do your best to reconstruct the scene from related events.
+
+    - Synthesize into a final answer, citing sources.
+    - Always include the document name(s)(source)  for any fact mentioned.
+    - Include the source 
+    
     =====context=====
     {context}
     =====question=====
@@ -57,9 +56,9 @@ def _load_docsearch(project_name):
     docsearch =  create_store_embeddings.load_faiss(project_name)
     return docsearch
 def build_retriever(PROMPT , project_name): 
-    callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])   
+    # callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])   
     llm = ChatGoogleGenerativeAI(
-        model = "gemini-2.5-flash-lite",
+        model = "gemini-2.5-flash",
         api_key = gemini_api_key, 
         streaming = True
     )
@@ -85,14 +84,17 @@ def build_retriever(PROMPT , project_name):
 
 
 
-def run_rag(qa , query : str ,st_callbacks ):
-        callbacks = [StreamingStdOutCallbackHandler()]  # Console output
-        if st_callbacks:
-            callbacks.append(st_callbacks)
-        result = qa.invoke({"question": query},
-                            config={"callbacks": callbacks})
+def run_rag(qa , query : str  ):
+        # callbacks = [StreamingStdOutCallbackHandler()]  # Console output
+        # if st_callbacks:
+        #     callbacks.append(st_callbacks)
+        result = qa.invoke({"question": query})
         pprint.pprint(result)
         answer = result["answer"]
         return answer
 
-
+if __name__ == "__main__":
+    prompt = get_prompt()
+    load_docsearch = _load_docsearch("kitty_milk")
+    qa , llm = build_retriever(prompt , "kitty_milk")
+    answer = run_rag(qa , "blue house")

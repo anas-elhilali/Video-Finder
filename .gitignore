@@ -6,3 +6,5 @@ Data/processed/
 Video/
 .env
 __pycache__
+agent-env
+venv

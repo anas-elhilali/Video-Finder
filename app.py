@@ -5,25 +5,22 @@ import sys
 import time
 import vertexai
 from vertexai.generative_models import GenerativeModel
-from langchain_community.callbacks.streamlit import StreamlitCallbackHandler
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 from Src.VideoToText import video_to_text as vtt
 import pandas as pd
-from Src.Scrap import scrap_channel_transcripts as yt
-import logic
- 
+from dotenv import load_dotenv
+from App import logic
+load_dotenv()
+from Src.rag import rag_query as rg
+from Src.rag import create_store_embeddings as cse
+from Src.rag import load_and_chunks as lc
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC_DIR = os.path.join(BASE_DIR, "Src")
 sys.path.insert(0, SRC_DIR)
 
-import Scrap.scrap_channel_videos as scrap_videos
-import rag.rag_query as rg
-import rag.load_and_chunks as lc
-import rag.create_store_embeddings as cse
-# os.environ["HTTP_PROXY"] = "http://10.8.22.5:8089"
-# os.environ["HTTPS_PROXY"] = "http://10.8.22.5:8089"
 
-import utils
+from App import utils
 st.set_page_config(
     page_title="Content Automation",
     page_icon="🎬",
@@ -33,17 +30,12 @@ st.set_page_config(
 
 
 
-style_file = os.path.join(BASE_DIR , "App" , "style.css")
+style_file = os.path.join("App" , "style.css")
 with open(style_file) as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 utils.initialize_session_state()
-
-
-# === MAIN APP FLOW ===
-
 if st.session_state.show_create_modal:
-    # CREATE PROJECT PAGE (FULL PAGE)
     st.markdown("""
     <style>
     [data-testid="stAppViewContainer"] {
@@ -70,15 +62,17 @@ if st.session_state.show_create_modal:
             <h2 style="color: white; text-align: center; margin-bottom: 30px;">🎬 New Project</h2>
         """, unsafe_allow_html=True)
         
-        base_path = "./agentic/Video"
+        base_path = "Video"
         os.makedirs(base_path, exist_ok=True)
-        
+        gemini_key_env = None
         project_name = st.text_input("Project Name", placeholder="Enter project name...", key="create_project_name")
-        channel_url = st.text_input("YouTube URL (Optional)", placeholder="youtube.com/...", key="create_youtube_url")
-        if channel_url:
-            number_videos = st.number_input("number of videos " , format="%d" , step = 1 ,  max_value=600 , min_value=1)
+
+        if os.getenv("GEMINI_API_KEY"):
+            gemini_key_env = os.getenv("GEMINI_API_KEY")
+        else:
+            gemini_key_env = st.text_input("Gemini Api Key" , placeholder="Enter Gemini Api key" , key="set_api_key" , type="password")
             
-        
+
         uploaded_files = st.file_uploader("Upload Videos", type=['mp4', 'mov', 'avi', 'wmv'], accept_multiple_files=True, key="create_upload_videos")
         
         st.markdown("<div style='margin: 20px 0;'></div>", unsafe_allow_html=True)
@@ -87,20 +81,17 @@ if st.session_state.show_create_modal:
         
         with col_btn1:
             if st.button("🚀 Create & Process", use_container_width=True, key="create_btn"):
-                if project_name:
+                if project_name and gemini_key_env:
                     project_path = os.path.join(base_path, project_name)
                     os.makedirs(project_path, exist_ok=True)
-                    
+                    with open(".env" , "a") as f:
+                        f.write(f"GEMINI_API_KEY='{gemini_key_env}'\n")
                     if uploaded_files:
                         for video_file in uploaded_files:
                             file_path = os.path.join(project_path, video_file.name)
                             with open(file_path, "wb") as f:
                                 f.write(video_file.getbuffer())
                     
-                    if channel_url:
-                        st.info("🔄 Scraping YouTube videos...")
-                        video_ids = scrap_videos.channel_videoids(channel_url , number_videos)
-                        scrap_videos.download_videos(video_ids , project_name)
                     
                     st.session_state.clicked_project = project_name
                     st.session_state.show_create_modal = False
@@ -115,10 +106,9 @@ if st.session_state.show_create_modal:
                 st.rerun()
         
         st.markdown("</div>", unsafe_allow_html=True)
-
 elif st.session_state.clicked_project is None:
     # PROJECT SELECTION VIEW
-    base_path = "./agentic/Video"
+    base_path = "Video"
     os.makedirs(base_path, exist_ok=True)
     
     list_projects_path = os.listdir(base_path)
@@ -171,16 +161,8 @@ else:
             st.session_state.chat_history = []
             st.rerun()
         
-        st.markdown("**Tools**")
-        if st.button("🔍 ClipFinder", key="tool_finder", use_container_width=True):
-            st.session_state.current_tool = "finder"
-            st.session_state.chat_history = []
-            st.rerun()
         
-        if st.button("✍️ WriterGPT", key="tool_writer", use_container_width=True):
-            st.session_state.current_tool = "writer"
-            st.session_state.chat_history = []
-            st.rerun()
+       
         
         st.markdown("---")
         
@@ -189,8 +171,7 @@ else:
             st.session_state.chat_history = [] 
             st.rerun()
     
-    # Main content area
-    base_path = "./agentic/Video"
+    base_path = "Video"
     project_path = os.path.join(base_path, st.session_state.clicked_project)
     
     if not st.session_state.project_processed:
@@ -208,13 +189,14 @@ else:
                 PROJECT_ID = os.getenv("PROJECT_ID")
                 LOCATION = os.getenv("LOCATION")
                 SERVICE_ACCOUNT_KEY_FILE = os.getenv("SERVICE_ACCOUNT_KEY_FILE")
+
                 GEMINI_MODEL = "gemini-2.5-flash"
-                
+
                 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = SERVICE_ACCOUNT_KEY_FILE
                 vertexai.init(project=PROJECT_ID, location=LOCATION)
                 gemini_model = GenerativeModel(GEMINI_MODEL)
                 
-                project_data_path = f"./agentic/Data/Projects/{st.session_state.clicked_project}"
+                project_data_path = f"Data/Projects/{st.session_state.clicked_project}"
                 RAW_FOLDER = f"{project_data_path}/raw"
                 PROCESSED_FOLDER = f"{project_data_path}/processed"
                 FAISS_FOLDER = f"{project_data_path}/faiss"
@@ -308,8 +290,7 @@ else:
                         try:
                             PROMPT = rg.get_prompt()
                             qa, llm = rg.build_retriever(PROMPT, st.session_state.clicked_project)
-                            st_callback = StreamlitCallbackHandler(parent_container=st.container())
-                            response_generator = rg.run_rag(qa, user_input , st_callback)
+                            response_generator = rg.run_rag(qa, user_input)
 
                             # Collect chunks while displaying
                             response_chunks = []
@@ -319,7 +300,8 @@ else:
                             response = "".join(response_chunks)
 
 
-                            pattern = r'(\./agentic/Video/[^/]+/\d+\.webm)'
+                            pattern = r'(\./Video/[^/]+/\d+\.webm)'
+                            links_list = []
                             video_links = list(set(re.findall(pattern, response)))
                             if video_links:
                                 
@@ -330,7 +312,8 @@ else:
                                     # Point to the HTTP server
                                     http_url = f"http://localhost:8000/{link.lstrip('./')}"
                                     
-                                    links = f'{i}. <a href="{http_url}" target="_blank">▶️ {project_name}/{filename}</a>'
+                                    links_list.append(f'{i}. <a href="{http_url}" target="_blank">▶️ {project_name}/{filename}</a>')
+                            links = "\n".join(links_list)
                             final_response = "\n".join([response , links])
                             st.session_state.chat_history[-1]["bot"] = final_response 
                             st.markdown(response)
@@ -339,36 +322,4 @@ else:
                         except Exception as e:
                             st.error(f"❌ Error: {e}")
         
-        elif st.session_state.current_tool == "writer":
-            if "chat_history" not in st.session_state:
-                st.session_state.chat_history = []
-            
-            if len(st.session_state.chat_history) == 0:
-                st.markdown("""
-                <div style='display: flex; flex-direction: column; align-items: center; justify-content: center; 
-                            height: 70vh; text-align: center;'>
-                    <h1 style='color: rgba(255, 255, 255, 0.8); font-size: 48px; margin-bottom: 20px;'>
-                        ✍️ Writer GPT
-                    </h1>
-                    <p style='color: rgba(255, 255, 255, 0.6); font-size: 18px;'>
-                        Generate Stories and Scripts based on your videos
-                    
-                     💡Writer GPT  coming soon...
-                   </p>
-                </div>
-                """, unsafe_allow_html=True)
-            # else:
-            #     for i, chat in enumerate(st.session_state.chat_history):
-            #         with st.chat_message("user"):
-            #             st.write(chat["user"])
-            #         with st.chat_message("assistant"):
-            #             st.write(chat["bot"])
-            
-            # if user_input := st.chat_input("Ask Writer GPT to generate content..."):
-            #     st.session_state.chat_history.append({"user": user_input, "bot": ""})
-                
-            #     with st.chat_message("user"):
-            #         st.write(user_input)
-                
-            #     with st.chat_message("assistant"):
-            #         st.info("💡 Writer GPT feature coming soon...")
+        

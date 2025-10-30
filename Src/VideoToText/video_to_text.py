@@ -7,9 +7,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-PROJECT_ID = os.getenv("PROJECT_ID") 
-LOCATION = os.getenv("LOCATION")  
-SERVICE_ACCOUNT_KEY_FILE = os.getenv("SERVICE_ACCOUNT_KEY_FILE")  
 GEMINI_MODEL = "gemini-2.5-flash"
 
 ANALYSIS_PROMPT = """
@@ -77,39 +74,3 @@ def analyze_and_create_description(video_path: str, model: GenerativeModel, desc
 
     except Exception as e:
         print(f"❌ An API error occurred: {e}\n")
-
-
-if __name__ == '__main__':
-        try:
-            Project_name = "cat"
-            VIDEO_FOLDER =f"agentic/Video/{Project_name}"
-            DESCRIPTION_FOLDER = f"./agentic/Data/Project/{Project_name}" 
-            os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = SERVICE_ACCOUNT_KEY_FILE
-            vertexai.init(project=PROJECT_ID, location=LOCATION)
-            gemini_model = GenerativeModel(GEMINI_MODEL)
-            print(f"✅ Successfully initialized Gemini model: {GEMINI_MODEL}")
-            if not os.path.isdir(VIDEO_FOLDER):
-                print(f"❌ Error: Folder not found at '{VIDEO_FOLDER}'.")
-            else:
-                print(f"📂 Processing videos in folder: '{VIDEO_FOLDER}'")
-                supported_extensions = ('.mp4', '.mov', '.avi', '.mkv' , '.webm')
-
-                video_files = [f for f in os.listdir(VIDEO_FOLDER) if f.lower().endswith(supported_extensions)]
-                total_videos = len(video_files)
-                print(f"Found {total_videos} videos to process.")
-
-                for i, filename in enumerate(video_files):
-                    print(f"\n--- Processing video {i+1}/{total_videos}: {filename} ---")
-                    video_to_analyze = os.path.join(VIDEO_FOLDER, filename)
-                    analyze_and_create_description(video_to_analyze, gemini_model, DESCRIPTION_FOLDER)
-                    
-                    if i < total_videos - 1:
-                        delay_seconds = 2  # Delay to respect API rate limits
-                        print(f"⏳ Waiting for {delay_seconds} seconds...")
-                        time.sleep(delay_seconds)
-                
-                print("\n✅ All videos processed.")
-
-        except Exception as e:
-            print(f"❌ A setup or authentication error occurred: {e}")
-            print("Please ensure your Project ID, Location, and Key File are correct.")

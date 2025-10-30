@@ -33,12 +33,11 @@ def get_project_metadata(base_path, project_name):
     except:
         return "Unknown", 0
 
-@st.cache_resource
 def init_vertexai():
     """Initialize Vertex AI once"""
     PROJECT_ID = os.getenv("PROJECT_ID")
     LOCATION = os.getenv("LOCATION")
-    SERVICE_ACCOUNT_KEY_FILE = os.getenv("SERVICE_ACCOUNT_KEY_FILE")
+    SERVICE_ACCOUNT_KEY_FILE = "inductive-gift-465720-v6-c7ccb4800921.json"
     
     if PROJECT_ID and LOCATION and SERVICE_ACCOUNT_KEY_FILE:
         os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = SERVICE_ACCOUNT_KEY_FILE
