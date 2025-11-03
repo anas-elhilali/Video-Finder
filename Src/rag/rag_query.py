@@ -11,6 +11,7 @@ from langchain_classic.callbacks.streaming_stdout import StreamingStdOutCallback
 from dotenv import load_dotenv
 
 
+
 script_dir = os.path.dirname(os.path.abspath(__file__))
 dotenv_path = os.path.join(script_dir,"..", '..', '.env')
 load_dotenv(dotenv_path=dotenv_path)
