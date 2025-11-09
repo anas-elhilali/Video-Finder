@@ -22,27 +22,22 @@ gemini_api_key = os.getenv("GEMINI_API_KEY")
 
 
 def get_prompt():
-    template = """
-    You are an expert in finding scenes that describe a script your job is to help a content creator find scenes that support their script(story )
-    =====previous conversation=====
-    Previous conversation:
-    {chat_history}
-    =====instruction=====
-    you have to follow this instructions : 
-    If the input script has multiple parts:
-
-    - Synthesize into a final answer, citing sources.
-    - Always include the document name(s)(source)  for any fact mentioned.
-    - Include the source 
-    
-    =====context=====
-    {context}
-    =====question=====
-    question: look for scenes in this script , each part of this script give the source  "{question}"   
-    Answer (include source it should be clickable with the timespan ):
-    
-    
-    """
+    template = """Please provide an answer based solely on the provided sources. 
+    When referencing information from a source, 
+    cite the appropriate source(s) using their corresponding numbers. 
+    Every answer should include at least one source citation. 
+    Only cite a source when you are explicitly referencing it. 
+    If none of the sources are helpful, you should indicate that. 
+    You shouldn't add multiple source_ids in one single brackets , each source_id should be sperated inside a bracket.
+    Query: When is water wet?\n
+    Answer: Water will be wet when the sky is red [2], 
+    which occurs in the evening [1].\n
+    Now it's your turn. Below are several numbered sources of information:
+    \n------\n"
+    {context}"
+    \n------\n
+    Query: {question}\n
+    "Answer: """
     PROMPT = PromptTemplate(
         template=template , 
         input_variables=["context", "question", "chat_history"]
@@ -57,7 +52,6 @@ def _load_docsearch(project_name):
     docsearch =  create_store_embeddings.load_faiss(project_name)
     return docsearch
 def build_retriever(PROMPT , project_name): 
-    # callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])   
     llm = ChatGoogleGenerativeAI(
         model = "gemini-2.5-flash",
         api_key = gemini_api_key, 
@@ -70,7 +64,6 @@ def build_retriever(PROMPT , project_name):
         )
     docsearch =_load_docsearch(project_name)
     retriever = docsearch.as_retriever(search_kwargs ={"k" : 50})
-    
     qa =    ConversationalRetrievalChain.from_llm(
         llm = llm ,
         retriever = retriever , 
@@ -86,16 +79,14 @@ def build_retriever(PROMPT , project_name):
 
 
 def run_rag(qa , query : str  ):
-        # callbacks = [StreamingStdOutCallbackHandler()]  # Console output
-        # if st_callbacks:
-        #     callbacks.append(st_callbacks)
+
         result = qa.invoke({"question": query})
-        pprint.pprint(result)
         answer = result["answer"]
         return answer
 
-if __name__ == "__main__":
-    prompt = get_prompt()
-    load_docsearch = _load_docsearch("kitty_milk")
-    qa , llm = build_retriever(prompt , "kitty_milk")
-    answer = run_rag(qa , "blue house")
+# if __name__ == "__main__":
+#     prompt = get_prompt()
+#     load_docsearch = _load_docsearch("kitty_milk")
+#     qa , llm = build_retriever(prompt , "kitty_milk")
+#     answer = run_rag(qa , "blue house")
+#     print(answer)

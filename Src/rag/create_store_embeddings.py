@@ -10,25 +10,19 @@ embeddings = HuggingFaceEmbeddings(model_name = "all-MiniLM-L6-v2")
 def save_faiss(project_name):
     with open(f'Data/Projects/{project_name}/processed/processed_docs.json', 'r', encoding='utf-8') as f:
         processed_doc = json.load(f)
-# vec_a = embeddings.embed_query(processed_doc[0]['description'])
-# vec_b = embeddings.embed_query("kittens inside a box")
-
-# def cosine_similarity(vec_a , vec_b):
-#     return np.dot(vec_a, vec_b) / (np.linalg.norm(vec_a) * np.linalg.norm(vec_b))
-# similarity = cosine_similarity(vec_a , vec_b)
-# print(similarity)
     
     docs = [
         Document(
-            page_content=f"{scene['description']}\n source : {scene['video_path']} , timespan : {scene['scene_timespan']}",
+            page_content=f"{scene['description']}\n source_id : {scene_id} \n source : {scene['video_path']} , timespan : {scene['scene_timespan']}",
             metadata={
+                "scene" : scene , 
                 "scene_num": scene['scene_num'],
                 "scene_timespan": scene['scene_timespan'],
                 "doc": scene['doc'],
                 "video_path" :scene['video_path']
             }
         )
-        for scene in processed_doc
+        for scene_id, scene in processed_doc.items()
     ]
     docsearch = FAISS.from_documents(docs , embeddings) 
     faiss_folder = f"Data/Projects/{project_name}/faiss"
