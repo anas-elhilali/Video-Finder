@@ -8,7 +8,7 @@
 
 ![Video Finder Stats](https://github-readme-stats.vercel.app/api/pin/?username=anas-elhilali&repo=Video-Finder&theme=dark)
 ## Why 
-This project was born out of a real-world business need. As the creator of a YouTube channel with over 167,000 subscribers generating millions of views, my single biggest bottleneck during editing was video research. 
+This project was born out of a real-world business need. As the creator of a YouTube channel with over 167,000 subscribers , my single biggest bottleneck during editing was video research. 
 
 **The Problem:**
 Manually scrubbing through hours of footage to find one specific moment was inefficient and creatively draining. I was spending 2-3 hours per video just searching for clips.
@@ -51,6 +51,7 @@ streamlit run app.py
 ## Contributing
 
 Contributions are welcome! Please open an issue or submit a pull request for improvements or bug fixes.
+
 
 
 
