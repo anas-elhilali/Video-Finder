@@ -16,6 +16,12 @@ Manually scrubbing through hours of footage to find one specific moment was inef
 **The Solution:**
 I built VideoFinder - an AI-powered search engine that understands video 
 content and returns exact timestamps in seconds.
+## Demo 
+
+
+https://github.com/user-attachments/assets/a7e9eb2f-8498-457f-849a-507b82719158
+
+
 ## Features
 
 - Quickly finds video files in local directories  
@@ -45,6 +51,7 @@ streamlit run app.py
 ## Contributing
 
 Contributions are welcome! Please open an issue or submit a pull request for improvements or bug fixes.
+
 
 
 
